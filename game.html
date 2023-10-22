@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodge the Block!</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+
+        let score = 0;
+        let stage = 1;
+        let speed = 2;
+        let blockProbability = 0.07;
+        let isPaused = false;
+
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height - 60,
+            radius: 25,
+            color: 'blue',
+            dx: 5
+        };
+
+        let blocks = [];
+        const blockWidth = 70;
+        const blockHeight = 30;
+        const blockHorizontalSpeed = 3;
+
+        function drawPlayer() {
+            ctx.font = "50px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("😊", player.x, player.y);
+        }
+
+        const blockEmojis = ["🤬", "😡", "😠", "👿", "👹", "👺"];
+
+        function getRandomEmoji() {
+            const randomIndex = Math.floor(Math.random() * blockEmojis.length);
+            return blockEmojis[randomIndex];
+        }
+
+        function drawBlock(block) {
+            ctx.font = "50px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(block.emoji, block.x + blockWidth / 2, block.y + blockHeight / 2);
+        }
+
+        function pauseGame() {
+            isPaused = true;
+        }
+
+        function resumeGame() {
+            isPaused = false;
+            update();
+        }
+
+        function notifyLevelUp() {
+            pauseGame();
+            setTimeout(() => {
+                alert(`Congratulations! You've advanced to Stage ${stage}!`);
+                resumeGame();
+            }, 100);
+        }
+
+        function updateStage() {
+        if (score >= 400 && stage < 3) { // Ubah dari 200 menjadi 400
+            stage = 3;
+            speed = 6;
+            blockProbability = 0.05;
+            notifyLevelUp();
+        } else if (score >= 300 && stage < 2) { // Ubah dari 100 menjadi 200
+            stage = 2;
+            speed = 4;
+            blockProbability = 0.05;
+            notifyLevelUp();
+        }
+    }
+
+
+        function update() {
+            if (isPaused) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+
+            if (Math.random() < blockProbability) {
+                let x = Math.random() * (canvas.width - blockWidth);
+                blocks.push({ 
+                    x: x, 
+                    y: 0, 
+                    dx: blockHorizontalSpeed, 
+                    emoji: getRandomEmoji() 
+                });
+            }
+
+            for (let i = 0; i < blocks.length; i++) {
+                let block = blocks[i];
+                block.y += speed;
+
+                if (stage === 3) {
+                    block.x += block.dx;
+                    if (block.x <= 0 || block.x >= canvas.width - blockWidth) {
+                        block.dx = -block.dx;
+                    }
+                }
+
+                drawBlock(block);
+
+                if (block.y > canvas.height) {
+                    blocks.splice(i, 1);
+                    i--;
+                    score += 10;
+                    updateStage();
+                }
+
+                if (block.y < player.y + player.radius && block.y + blockHeight > player.y - player.radius && block.x < player.x + player.radius && block.x + blockWidth > player.x - player.radius) {
+                    pauseGame();
+                    if (confirm(`You Lost on Stage ${stage}! Score: ${score}.\nDo you want to play again?`)) {
+                        document.location.reload();
+                    }
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        canvas.addEventListener('mousemove', (event) => {
+            player.x = event.clientX;
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight' && player.x < canvas.width - player.radius) {
+                player.x += player.dx;
+            }
+            if (event.key === 'ArrowLeft' && player.x > player.radius) {
+                player.x -= player.dx;
+            }
+        });
+
+        update();
+    </script>
+</body>
+
+</html>
